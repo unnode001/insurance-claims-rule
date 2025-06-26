@@ -1,0 +1,137 @@
+package rules
+
+import com.insurance.claims.model.TravelDelayClaim
+import com.insurance.claims.model.ClaimDecision
+import java.math.BigDecimal
+import java.time.LocalDateTime
+
+// 全局变量
+global org.slf4j.Logger logger
+
+/**
+ * 旅游延误险自动理赔规则
+ * 业务规则：
+ * - 延误4-8小时（不含8小时）：赔付300元
+ * - 延误8小时及以上：赔付600元
+ * - 延误不足4小时：不予理赔
+ * - 特殊情况需要人工审核
+ */
+
+// 规则1：延误4-8小时理赔300元
+rule "延误4-8小时理赔300元"
+    salience 100  // 规则优先级
+    when
+        $claim: TravelDelayClaim(
+            delayHours >= 4 && delayHours < 8,
+            scheduledDeparture != null,
+            actualDeparture != null
+        )
+        $decision: ClaimDecision(eligible == false)  // 确保决策对象未被其他规则处理
+    then
+        logger.info("执行规则：延误4-8小时理赔300元 - 延误{}小时", $claim.getDelayHours());
+        
+        modify($decision) {
+            setEligible(true),
+            setCompensationAmount(new BigDecimal("300.00")),
+            setReason("延误" + $claim.getDelayHours() + "小时，符合4-8小时理赔条件"),
+            setRuleName("延误4-8小时理赔规则"),
+            setDecisionTime(LocalDateTime.now()),
+            setRiskLevel(ClaimDecision.RiskLevel.LOW),
+            setRequiresManualReview(false)
+        };
+end
+
+// 规则2：延误8小时以上理赔600元
+rule "延误8小时以上理赔600元"
+    salience 110  // 优先级高于4-8小时规则
+    when
+        $claim: TravelDelayClaim(
+            delayHours >= 8,
+            scheduledDeparture != null,
+            actualDeparture != null
+        )
+        $decision: ClaimDecision(eligible == false)
+    then
+        logger.info("执行规则：延误8小时以上理赔600元 - 延误{}小时", $claim.getDelayHours());
+        
+        modify($decision) {
+            setEligible(true),
+            setCompensationAmount(new BigDecimal("600.00")),
+            setReason("延误" + $claim.getDelayHours() + "小时，符合8小时以上理赔条件"),
+            setRuleName("延误8小时以上理赔规则"),
+            setDecisionTime(LocalDateTime.now()),
+            setRiskLevel(ClaimDecision.RiskLevel.LOW),
+            setRequiresManualReview(false)
+        };
+end
+
+// 规则3：延误不足4小时不予理赔
+rule "延误不足4小时不予理赔"
+    salience 90
+    when
+        $claim: TravelDelayClaim(
+            delayHours < 4,
+            scheduledDeparture != null,
+            actualDeparture != null
+        )
+        $decision: ClaimDecision(eligible == false)
+    then
+        logger.info("执行规则：延误不足4小时不予理赔 - 延误{}小时", $claim.getDelayHours());
+        
+        modify($decision) {
+            setEligible(false),
+            setCompensationAmount(BigDecimal.ZERO),
+            setReason("延误" + $claim.getDelayHours() + "小时，不足4小时不符合理赔条件"),
+            setRuleName("延误不足4小时拒赔规则"),
+            setDecisionTime(LocalDateTime.now()),
+            setRiskLevel(ClaimDecision.RiskLevel.LOW),
+            setRequiresManualReview(false)
+        };
+end
+
+// 规则4：异常延误时长需要人工审核
+rule "异常延误时长需要人工审核"
+    salience 120  // 最高优先级
+    when
+        $claim: TravelDelayClaim(delayHours > 24)
+        $decision: ClaimDecision()
+    then
+        logger.warn("异常延误时长：{}小时，需要人工审核", $claim.getDelayHours());
+        
+        modify($decision) {
+            setEligible(false),
+            setCompensationAmount(BigDecimal.ZERO),
+            setReason("延误时长异常（" + $claim.getDelayHours() + "小时），需要人工审核"),
+            setRuleName("异常延误审核规则"),
+            setDecisionTime(LocalDateTime.now()),
+            setRiskLevel(ClaimDecision.RiskLevel.HIGH),
+            setRequiresManualReview(true),
+            setReviewSuggestion("延误时长超过24小时，建议核实航班信息和延误原因")
+        };
+end
+
+// 规则5：关键信息缺失检查
+rule "关键信息缺失"
+    salience 130  // 最高优先级
+    when
+        $claim: TravelDelayClaim(
+            scheduledDeparture == null || 
+            actualDeparture == null ||
+            policyNumber == null ||
+            flightNumber == null
+        )
+        $decision: ClaimDecision()
+    then
+        logger.error("关键信息缺失，无法处理理赔申请");
+        
+        modify($decision) {
+            setEligible(false),
+            setCompensationAmount(BigDecimal.ZERO),
+            setReason("关键信息缺失：请补充完整的航班时间、保单号和航班号信息"),
+            setRuleName("信息完整性检查规则"),
+            setDecisionTime(LocalDateTime.now()),
+            setRiskLevel(ClaimDecision.RiskLevel.HIGH),
+            setRequiresManualReview(true),
+            setReviewSuggestion("请客户补充完整的申请信息后重新提交")
+        };
+end
