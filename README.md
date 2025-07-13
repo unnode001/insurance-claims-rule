@@ -1,6 +1,6 @@
 # 旅游延误险自动理赔系统
 
-基于Spring Boot + 规则引擎的旅游延误险自动理赔判断模块，实现智能化理赔决策。
+核心开发框架基于Spring Boot + 规则引擎的旅游延误险自动理赔判断模块，实现智能化理赔决策。
 
 ## 项目概述
 
@@ -9,11 +9,10 @@
 ## 技术栈
 
 - **框架**: Spring Boot 3.1.5
-- **规则引擎**: SimpleRuleEngineService (纯Java实现)
+- **规则引擎**: SimpleRuleEngineService (纯Java)
 - **数据库**: H2 (内存数据库)
 - **持久层**: Spring Data JPA + Hibernate
 - **API文档**: Swagger/OpenAPI 3.0
-- **构建工具**: Maven
 - **Java版本**: 17
 
 ## 核心功能
@@ -34,12 +33,7 @@
 4. **申请状态管理** - 支持APPROVED/REJECTED状态管理
 5. **实时监控** - 提供系统健康检查和API文档
 
-## 快速开始
-
-### 环境要求
-
-- Java 17 或更高版本
-- Maven 3.6 或更高版本
+## 本地运行
 
 ### 启动应用
 
@@ -57,39 +51,6 @@ mvn spring-boot:run
 - **API文档**: <http://localhost:8080/api/swagger-ui.html>
 - **健康检查**: <http://localhost:8080/api/actuator/health>
 - **H2控制台**: <http://localhost:8080/api/h2-console>
-
-## 项目结构
-
-```
-src/
-├── main/
-│   ├── java/com/insurance/claims/
-│   │   ├── InsuranceClaimsApplication.java     # 主启动类
-│   │   ├── config/
-│   │   │   └── DroolsConfig.java              # Drools配置
-│   │   ├── controller/
-│   │   │   ├── TravelDelayClaimController.java # REST API控制器
-│   │   │   └── GlobalExceptionHandler.java    # 全局异常处理
-│   │   ├── dto/
-│   │   │   ├── TravelDelayClaimRequest.java   # 请求DTO
-│   │   │   └── ClaimResponse.java             # 响应DTO
-│   │   ├── model/
-│   │   │   ├── TravelDelayClaim.java          # 理赔申请实体
-│   │   │   └── ClaimDecision.java             # 决策结果模型
-│   │   ├── repository/
-│   │   │   └── TravelDelayClaimRepository.java # 数据访问层
-│   │   └── service/
-│   │       ├── RuleEngineService.java         # 规则引擎服务
-│   │       └── TravelDelayClaimService.java   # 业务服务
-│   └── resources/
-│       ├── rules/
-│       │   └── travel-delay-claims.drl        # Drools规则文件
-│       └── application.yml                    # 应用配置
-└── test/
-    └── java/com/insurance/claims/
-        └── service/
-            └── RuleEngineServiceTest.java     # 单元测试
-```
 
 ## 快速开始
 
@@ -219,20 +180,3 @@ GET /api/claims/health
 - 应用日志级别: DEBUG
 - 规则引擎日志级别: INFO
 - 数据库SQL日志: 开启（开发环境）
-
-### 性能优化建议
-
-1. 生产环境使用外部数据库（MySQL/PostgreSQL）
-2. 启用数据库连接池优化
-3. 添加缓存层减少规则引擎重复计算
-4. 异步处理大批量理赔申请
-
-## 版本信息
-
-- **当前版本**: 1.0.0
-- **创建日期**: 2025-06-26
-- **最后更新**: 2025-06-26
-
-## 联系方式
-
-如有问题或建议，请联系开发团队。
